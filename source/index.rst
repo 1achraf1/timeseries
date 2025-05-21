@@ -49,11 +49,10 @@ Environment and Tools
   - ``TensorFlow/Keras`` or ``PyTorch``: Model development
   - ``matplotlib``, ``seaborn``: Visualization
   - ``MLflow`` or ``Weights & Biases``: Experiment tracking
-- **Deployment (Optional)**:
+- **Deployment **:
   
-  - ``FastAPI``, ``Flask``: REST API for inference
-  - ``Docker``, ``Kubernetes``: Containerized deployment
-  - ``Prometheus``, ``Grafana``: Monitoring and alerting
+  -Streamlit
+ 
 
 Pipeline Overview
 -----------------
