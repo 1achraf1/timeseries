@@ -156,10 +156,6 @@ Dependencies
 - TensorFlow/Keras
 - Matplotlib, Seaborn, Plotly
 
-License
--------
-
-MIT License – see ``LICENSE`` file for details.
 
 Acknowledgements
 ----------------
