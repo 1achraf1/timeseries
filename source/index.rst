@@ -3,141 +3,183 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-ts documentation
-================
+Time Series – RUL Forecasting and Anomaly Detection
+===================================================
 
-Time Series Project: RUL Prediction and Anomaly Detection (CMAPSS)
-===================================================================
+This documentation provides a detailed walkthrough of a predictive maintenance system developed using the NASA CMAPSS dataset. It demonstrates three main capabilities:
 
-Overview
---------
+- Predicting Remaining Useful Life (RUL)
+- Detecting anomalies
+- Forecasting RUL trajectories using sequence models
 
-**Objective:**  
-Predict Remaining Useful Life (RUL) of aircraft engines and detect anomalies using multivariate time series data from NASA's CMAPSS dataset.
+The system is built using a combination of machine learning and deep learning techniques, including XGBoost and LSTM-based architectures.
 
-**Goals:**  
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
 
-- Develop a regression model for RUL prediction.
-- Implement anomaly detection for early failure identification.
-- Enable reproducible training and optional deployment pipeline.
-
-Dataset Description
--------------------
-
-**Dataset Source:**  
-NASA's Commercial Modular Aero-Propulsion System Simulation (CMAPSS)
-
-**Subset Used:**  
-- FD001 (Single operating condition, single fault mode)
-
-**Features:**
-
-- ``engine_id``: Unique engine unit identifier
-- ``cycle``: Time cycle (incremental)
-- ``op_setting_1, op_setting_2, op_setting_3``: Operational settings
-- ``sensor_1`` to ``sensor_21``: Sensor readings
-- ``RUL``: Target variable (computed during preprocessing)
-
-Environment and Tools
----------------------
-
-- **Language**: Python 3.10+
-- **Libraries**:
-  
-  - ``pandas``, ``numpy``: Data manipulation
-  - ``scikit-learn``: Preprocessing and evaluation
-  - ``TensorFlow/Keras`` or ``PyTorch``: Model development
-  - ``matplotlib``, ``seaborn``: Visualization
-  - ``MLflow`` or ``Weights & Biases``: Experiment tracking
-- **Deployment **:
-  
-  -Streamlit
- 
-
-Pipeline Overview
+Project Structure
 -----------------
 
 .. code-block:: text
 
-   1. Data Ingestion
-   2. Preprocessing
-   3. Feature Engineering
-   4. RUL Labeling
-   5. Model Training
-      - RUL Prediction
-      - Anomaly Detection
-   6. Evaluation
-   7. Deployment (Optional)
+    time-series-rul-anomaly/
+    ├── data/
+    ├── models/
+    ├── src/
+    ├── results/
+    ├── requirements.txt
+    ├── setup.py
+    └── README.md
 
-Detailed Workflow
------------------
+Model Overview
+--------------
 
-**1. Data Ingestion**
+**XGBoost RUL Prediction**
 
-- Load ``train_FD001.txt`` and ``test_FD001.txt`` using ``pandas.read_csv``.
-- Parse engine cycle data into structured DataFrames.
+- Regression model to estimate RUL
+- Features: statistical summaries, trend indicators, rate of change
+- Hyperparameter optimization via grid search
 
-**2. Preprocessing**
+**LSTM Autoencoder for Anomaly Detection**
 
-- Normalize sensor data (MinMaxScaler or StandardScaler).
-- Remove sensors with no variation or redundancy.
-- Handle missing or outlier values if applicable.
+- Trained on normal data to detect deviations
+- Architecture: Encoder → Bottleneck → Decoder
+- Anomalies flagged via reconstruction error + dynamic threshold
 
-**3. Feature Engineering**
+**LSTM RUL Forecaster**
 
-- Rolling statistics (mean, std) on sensor readings.
-- Engine health indicators (e.g., deviation from baseline).
-- Lag features and cycle-based deltas.
+- Sequence-to-sequence model
+- Bidirectional LSTM + ReLU output layers
+- Forecasts full RUL trajectory (not just point prediction)
 
-**4. RUL Labeling**
+Dataset
+-------
 
-- For training data:  
-  ``RUL = max_cycle_per_engine - current_cycle``
-- For testing data:  
-  Use ``RUL_FD001.txt`` as ground truth.
+- **Source**: `NASA CMAPSS <https://www.nasa.gov/content/prognostics-center-of-excellence-data-set-repository>`_
+- **Subset**: FD004 (multiple fault modes and conditions)
+- **Structure**:
+  - 21 sensors, 3 operational settings
+  - Training: full engine life
+  - Testing: truncated time series
 
-**5. Model Training**
+Installation
+------------
 
-- **RUL Prediction**:
-  
-  - Models: LSTM, GRU, CNN, or Transformer-based models
-  - Loss: Mean Squared Error (MSE)
+Clone the repository:
 
-- **Anomaly Detection**:
-  
-  - Approaches: Autoencoders, Isolation Forest, One-Class SVM
-  - Use reconstruction error or model confidence scores
+.. code-block:: bash
 
-**6. Evaluation**
+    git clone https://github.com/mouradboutrid/time-series-rul-anomaly.git
+    cd time-series-rul-anomaly
 
-- Metrics: RMSE, MAE, Score function (as in literature)
-- Visualizations: RUL curves, prediction intervals, anomaly heatmaps
+Install Python dependencies:
 
-**7. Deployment (Optional)**
+.. code-block:: bash
 
-- Export model: ``.h5`` (Keras) or ``.pt`` (PyTorch)
-- Create inference endpoint using FastAPI/Flask
-- Wrap in Docker container for CI/CD integration
+    pip install -r requirements.txt
 
-Logging and Monitoring
-----------------------
-
-- Track metrics with MLflow or W&B
-- Use Prometheus + Grafana dashboards for live monitoring
-- Implement alerting for anomaly spikes
-
-Versioning and Reproducibility
-------------------------------
-
-- Use Git for source control
-- Lock dependencies with ``requirements.txt`` or ``poetry.lock``
-- Track experiment metadata and artifacts
-
-Notes
+Usage
 -----
 
-- FD002, FD003, FD004 introduce multiple operating conditions and fault modes for generalization.
-- Consider ensemble methods or domain adaptation for production environments.
+**Data Preparation**
+
+1. Download CMAPSS dataset
+2. Place raw data in ``data/raw/``
+3. Run the notebook:
+
+.. code-block:: bash
+
+    jupyter notebook notebooks/01_data_preparation.ipynb
+
+**Run Notebooks in Order**
+
+1. ``01_data_preparation.ipynb``
+2. ``02_xgboost_rul_prediction.ipynb``
+3. ``03_lstm_autoencoder_anomaly_detection.ipynb``
+4. ``04_lstm_forecaster_rul_prediction.ipynb``
+5. ``05_model_evaluation.ipynb``
+
+**Using the XGBoost Model**
+
+.. code-block:: python
+
+    import joblib
+    from scripts.data_utils import preprocess_data
+
+    model = joblib.load('models/xgboost/xgb_rul_predictor.pkl')
+    X_new = preprocess_data(new_data)
+    predictions = model.predict(X_new)
+
+Feature Engineering
+-------------------
+
+- **Sliding windows**: mean, std, min, max
+- **Trends**: slope and curvature
+- **Interactions**: sensor-sensor multiplications
+- **Normalization**: per operational condition
+
+Optimization
+------------
+
+- **XGBoost**: Grid search with CV
+- **LSTM**: Bayesian optimization + early stopping
+
+Evaluation Metrics
+------------------
+
+- **Regression**: RMSE, MAE, RUL score
+- **Anomaly Detection**: Precision, Recall, F1, AUC, TTD
+
+Results
+-------
+
+- XGBoost: RMSE ≈ 15–20 cycles
+- Autoencoder: Detects failures ~30–50 cycles early
+- LSTM Forecaster: Accurate RUL curves up to 50 cycles out
+
+Future Work
+-----------
+
+- Add attention/transformer models
+- Real-time dashboards & pipelines
+- Uncertainty quantification with quantile regression
+- Transfer learning for other engine types
+- Explainability and RL-based maintenance policies
+
+Dependencies
+------------
+
+- Python 3.8+
+- NumPy, Pandas, SciPy
+- Scikit-learn, XGBoost
+- TensorFlow/Keras
+- Matplotlib, Seaborn, Plotly
+
+License
+-------
+
+MIT License – see ``LICENSE`` file for details.
+
+Acknowledgements
+----------------
+
+- NASA Prognostics Center for the CMAPSS dataset
+- Open-source libraries: XGBoost, TensorFlow, Keras, etc.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
